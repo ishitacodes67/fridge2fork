@@ -1,4 +1,4 @@
-# Byte-compiled / optimized / DLL files
+git reset --soft HEAD~1# Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[codz]
 *$py.class
@@ -216,3 +216,5 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+data/RecipeNLG_dataset.csv
+data/RecipeNLG_dataset.csv
