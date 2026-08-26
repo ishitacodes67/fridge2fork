@@ -53,4 +53,4 @@ def hybrid_search(query, top_k=5, alpha=0.5):
         print(f"  Ingredients: {df.iloc[idx]['ingredients_text']}\n")
 
 # Try the same query as yesterday for direct comparison
-hybrid_search("chicken, garlic, rice")
+hybrid_search("saffron, shrimp, coconut milk")
