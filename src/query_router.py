@@ -1,7 +1,22 @@
+from guardrail import evaluate_results
 from constraint_parser import parse_constraints
 from hybrid_search import hybrid_search, df, embeddings, model, bm25, normalize
 from sklearn.metrics.pairwise import cosine_similarity
 import numpy as np
+
+def extract_ingredients(query, constraints):
+    """
+    Very rough first-pass ingredient extraction: takes the raw query,
+    strips out constraint-related words, treats the rest as ingredients.
+    """
+    # Words that indicate constraints, not ingredients — strip these out
+    constraint_words = ["without", "no", "under", "minutes", "mins", "spicy", "mild",
+                         "budget", "cheap", "affordable", "vegetarian", "vegan",
+                         "gluten-free", "dairy-free", "keto"]
+    
+    tokens = [t.strip() for t in query.lower().replace(",", " ").split()]
+    ingredients = [t for t in tokens if t not in constraint_words and not t.isdigit()]
+    return ingredients
 
 def route_and_search(query, top_k=5):
     constraints = parse_constraints(query)
@@ -44,8 +59,13 @@ def route_and_search(query, top_k=5):
         print(f"- {df.iloc[idx]['title']}")
         print(f"  Ingredients: {df.iloc[idx]['ingredients_text']}\n")
 
+            # --- Run the guardrail check on final results ---
+    query_ingredients = extract_ingredients(query, constraints)
+    should_warn, coverage_scores, message = evaluate_results(query_ingredients, results, df)
+    print(f"\n{message}")
+
     return results
 
 
 if __name__ == "__main__":
-    route_and_search("chicken casserole without mushrooms")
+    route_and_search("saffron, shrimp, coconut milk")
