@@ -1,4 +1,28 @@
 import re
+# Category expansions — map common exclusion terms to what they actually cover
+EXCLUSION_EXPANSIONS = {
+    "shellfish": ["shrimp", "crab", "oyster", "oysters", "clam", "clams", "lobster", "scallop", "scallops"],
+    "nuts": ["peanut", "peanuts", "almond", "almonds", "cashew", "cashews", "walnut", "walnuts",
+             "pecan", "pecans", "pistachio", "pistachios", "hazelnut", "hazelnuts"],
+    "dairy": ["milk", "cheese", "cream", "butter", "yogurt"],
+    "eggs": ["egg"],
+    "soy": ["soy sauce", "tofu", "edamame"],
+}
+
+def expand_exclusions(exclusion_list):
+    """
+    Takes raw excluded words and expands categories into their actual ingredients.
+    e.g. 'shellfish' -> ['shellfish', 'shrimp', 'crab', 'oyster', ...]
+    """
+    expanded = set()
+    for word in exclusion_list:
+        expanded.add(word)
+        # Check if this word matches a category (allowing for "-free" stripped already)
+        for category, items in EXCLUSION_EXPANSIONS.items():
+            if word == category or word in items:
+                expanded.add(category)
+                expanded.update(items)
+    return list(expanded)
 
 def parse_constraints(query):
     """
@@ -19,10 +43,13 @@ def parse_constraints(query):
     if found_dietary:
         constraints["dietary"] = found_dietary
 
-    # --- Allergy / exclusions (e.g. "no nuts", "without dairy") ---
+       # --- Allergy / exclusions (e.g. "no nuts", "without dairy", "shellfish-free") ---
     exclusion_match = re.findall(r"(?:no|without|allergic to)\s+(\w+)", query_lower)
-    if exclusion_match:
-        constraints["exclude"] = exclusion_match
+    free_match = re.findall(r"(\w+)-free", query_lower)  # catches "shellfish-free", "nut-free"
+    
+    all_exclusions = exclusion_match + free_match
+    if all_exclusions:
+        constraints["exclude"] = expand_exclusions(all_exclusions)
 
     # --- Spice level ---
     if "spicy" in query_lower or "hot" in query_lower:
