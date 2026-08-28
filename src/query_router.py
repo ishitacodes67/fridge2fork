@@ -39,7 +39,7 @@ def route_and_search(query, top_k=5):
     combined_scores = 0.5 * vector_scores_norm + 0.5 * bm25_scores_norm
 
     # Get more candidates than top_k, so filtering still leaves enough results
-    candidate_indices = np.argsort(combined_scores)[::-1][:top_k * 4]
+    candidate_indices = np.argsort(combined_scores)[::-1][:top_k * 20]
 
     results = []
     for idx in candidate_indices:
@@ -54,10 +54,19 @@ def route_and_search(query, top_k=5):
         if len(results) >= top_k:
             break
 
-    print(f"\nTop {len(results)} results after filtering:\n")
-    for idx in results:
-        print(f"- {df.iloc[idx]['title']}")
-        print(f"  Ingredients: {df.iloc[idx]['ingredients_text']}\n")
+        print(f"\nTop {len(results)} results after filtering:\n")
+    
+    if not results:
+        excluded_items = constraints.get("exclude", [])
+        print(f"⚠️ No recipes found that avoid: {', '.join(excluded_items)} "
+              f"while matching your other criteria. Try broadening your search "
+              f"or checking a larger recipe database.")
+    else:
+        for idx in results:
+            print(f"- {df.iloc[idx]['title']}")
+            print(f"  Ingredients: {df.iloc[idx]['ingredients_text']}\n")
+
+    return results
 
             # --- Run the guardrail check on final results ---
     query_ingredients = extract_ingredients(query, constraints)
