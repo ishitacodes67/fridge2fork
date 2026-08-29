@@ -1,3 +1,4 @@
+from send_email import send_recipe_email
 from generate_response import generate_recipe_response
 from constraint_parser import parse_constraints
 from hybrid_search import hybrid_search, df, embeddings, model, bm25, normalize
@@ -75,10 +76,10 @@ def route_and_search(query, top_k=5):
 
     return results
 
-def full_pipeline(query, top_k=5):
+def full_pipeline(query, top_k=5, email_to=None):
     """
     The complete end-to-end flow: parse -> retrieve -> filter -> guardrail -> generate.
-    Returns the final natural-language response.
+    If email_to is provided, also emails the result.
     """
     results = route_and_search(query, top_k=top_k)
 
@@ -103,7 +104,10 @@ def full_pipeline(query, top_k=5):
     print("=" * 60)
     print(final_response)
 
+    if email_to:
+        send_recipe_email(email_to, final_response, query)
+
     return final_response
 
 if __name__ == "__main__":
-    full_pipeline("saffron, shrimp, coconut milk")
+    full_pipeline("chicken, garlic, rice", email_to="ishitakhatti5@gmail.com")
