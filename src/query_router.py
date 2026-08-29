@@ -1,3 +1,4 @@
+from generate_response import generate_recipe_response
 from constraint_parser import parse_constraints
 from hybrid_search import hybrid_search, df, embeddings, model, bm25, normalize
 from guardrail import evaluate_results
@@ -74,6 +75,35 @@ def route_and_search(query, top_k=5):
 
     return results
 
+def full_pipeline(query, top_k=5):
+    """
+    The complete end-to-end flow: parse -> retrieve -> filter -> guardrail -> generate.
+    Returns the final natural-language response.
+    """
+    results = route_and_search(query, top_k=top_k)
+
+    constraints = parse_constraints(query)
+    query_ingredients = extract_ingredients(query, constraints)
+
+    if not results:
+        excluded_items = constraints.get("exclude", [])
+        guardrail_message = (
+            f"No recipes found that avoid: {', '.join(excluded_items)}."
+            if excluded_items else "No matching recipes found."
+        )
+    else:
+        should_warn, coverage_scores, guardrail_message = evaluate_results(
+            query_ingredients, results, df
+        )
+
+    final_response = generate_recipe_response(query, results, df, guardrail_message)
+
+    print("\n" + "=" * 60)
+    print("FINAL GENERATED RESPONSE:")
+    print("=" * 60)
+    print(final_response)
+
+    return final_response
 
 if __name__ == "__main__":
-    route_and_search("saffron, shrimp, coconut milk")
+    full_pipeline("saffron, shrimp, coconut milk")
