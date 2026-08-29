@@ -1,3 +1,4 @@
+from nutrition import estimate_recipe_nutrition, suggest_nutrition_boost
 from send_email import send_recipe_email
 from generate_response import generate_recipe_response
 from constraint_parser import parse_constraints
@@ -76,11 +77,7 @@ def route_and_search(query, top_k=5):
 
     return results
 
-def full_pipeline(query, top_k=5, email_to=None):
-    """
-    The complete end-to-end flow: parse -> retrieve -> filter -> guardrail -> generate.
-    If email_to is provided, also emails the result.
-    """
+def full_pipeline(query, top_k=5, email_to=None, include_nutrition=False):
     results = route_and_search(query, top_k=top_k)
 
     constraints = parse_constraints(query)
@@ -104,10 +101,21 @@ def full_pipeline(query, top_k=5, email_to=None):
     print("=" * 60)
     print(final_response)
 
+    if include_nutrition and results:
+        top_recipe_ingredients = df.iloc[results[0]]["NER"]
+        nutrition = estimate_recipe_nutrition(top_recipe_ingredients)
+        boost_suggestion = suggest_nutrition_boost(nutrition)
+        print("\n" + "=" * 60)
+        print("WANT TO FINISH YOUR DAILY HEALTHY DOSE?")
+        print("=" * 60)
+        print(f"Estimated nutrition (top recipe): {nutrition}")
+        print(boost_suggestion)
+        final_response += f"\n\nNutrition note: {boost_suggestion}"
+
     if email_to:
         send_recipe_email(email_to, final_response, query)
 
     return final_response
 
 if __name__ == "__main__":
-    full_pipeline("chicken, garlic, rice", email_to="ishitakhatti5@gmail.com")
+    full_pipeline("chicken, garlic, rice", email_to="ishitakhatti5@gmail.com", include_nutrition=True)
