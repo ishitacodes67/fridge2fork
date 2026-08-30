@@ -57,9 +57,13 @@ def parse_constraints(query):
     elif "mild" in query_lower:
         constraints["spice_level"] = "mild"
 
-    # --- Budget signal (very rough for now) ---
-    if "budget" in query_lower or "cheap" in query_lower or "affordable" in query_lower:
-        constraints["budget_conscious"] = True
+        # --- Budget: extract an actual number if given (e.g., "under ₹300", "budget of 200") ---
+    budget_match = re.search(r"(?:₹|rs\.?|inr)\s*(\d+)|(\d+)\s*(?:₹|rs\.?|inr)", query_lower)
+    if budget_match:
+        amount = budget_match.group(1) or budget_match.group(2)
+        constraints["max_budget_inr"] = int(amount)
+    elif "budget" in query_lower or "cheap" in query_lower or "affordable" in query_lower:
+        constraints["budget_conscious"] = True  # signal present, but no specific number given
 
     # --- Everything else is treated as the ingredient/free-text part ---
     # Strip out the parts we already parsed, roughly, to isolate ingredients

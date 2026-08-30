@@ -1,3 +1,4 @@
+from budget import estimate_recipe_cost, is_within_budget
 from recognize_ingredients import recognize_ingredients_from_photo
 from nutrition import estimate_recipe_nutrition, suggest_nutrition_boost
 from send_email import send_recipe_email
@@ -51,10 +52,16 @@ def route_and_search(query, top_k=5):
             if any(excluded in recipe_ingredients for excluded in constraints["exclude"]):
                 continue
 
+               # --- Apply budget filter if a specific amount was given ---
+        if "max_budget_inr" in constraints:
+            recipe_ingredients_list = df.iloc[idx]["NER"]
+            cost = estimate_recipe_cost(recipe_ingredients_list)
+            if not is_within_budget(cost, constraints["max_budget_inr"]):
+                continue
+
         results.append(idx)
         if len(results) >= top_k:
             break
-
     print(f"\nTop {len(results)} results after filtering:\n")
 
     if not results:
@@ -132,4 +139,4 @@ def full_pipeline_from_photo(image_path, top_k=5, email_to=None, include_nutriti
 
 
 if __name__ == "__main__":
-    full_pipeline_from_photo("data/test_groceries.jpg", email_to="ishitakhatti5@gmail.com", include_nutrition=True)
+    full_pipeline("chicken, rice, garlic, under ₹300", email_to="ishitakhatti5@gmail.com", include_nutrition=False)
