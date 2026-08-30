@@ -1,3 +1,4 @@
+from recognize_ingredients import recognize_ingredients_from_photo
 from nutrition import estimate_recipe_nutrition, suggest_nutrition_boost
 from send_email import send_recipe_email
 from generate_response import generate_recipe_response
@@ -30,7 +31,6 @@ def route_and_search(query, top_k=5):
     print(f"\nQuery: {query}")
     print(f"Route: {route} | Constraints: {constraint_keys}")
 
-    # --- Run hybrid search scoring ---
     query_embedding = model.encode([query])
     vector_scores = cosine_similarity(query_embedding, embeddings)[0]
 
@@ -41,23 +41,20 @@ def route_and_search(query, top_k=5):
     bm25_scores_norm = normalize(bm25_scores)
     combined_scores = 0.5 * vector_scores_norm + 0.5 * bm25_scores_norm
 
-    # Get a large candidate pool so filtering still leaves enough results
     candidate_indices = np.argsort(combined_scores)[::-1][:top_k * 20]
 
     results = []
     for idx in candidate_indices:
         recipe_ingredients = df.iloc[idx]["ingredients_text"].lower()
 
-        # --- Apply hard exclusion filter ---
         if "exclude" in constraints:
             if any(excluded in recipe_ingredients for excluded in constraints["exclude"]):
-                continue  # skip this recipe, it violates an exclusion
+                continue
 
         results.append(idx)
         if len(results) >= top_k:
             break
 
-    # Print results ONCE, after filtering is fully done
     print(f"\nTop {len(results)} results after filtering:\n")
 
     if not results:
@@ -70,12 +67,12 @@ def route_and_search(query, top_k=5):
             print(f"- {df.iloc[idx]['title']}")
             print(f"  Ingredients: {df.iloc[idx]['ingredients_text']}\n")
 
-        # --- Run the guardrail check on final results (only if we have results) ---
         query_ingredients = extract_ingredients(query, constraints)
         should_warn, coverage_scores, message = evaluate_results(query_ingredients, results, df)
         print(f"{message}")
 
     return results
+
 
 def full_pipeline(query, top_k=5, email_to=None, include_nutrition=False):
     results = route_and_search(query, top_k=top_k)
@@ -117,5 +114,22 @@ def full_pipeline(query, top_k=5, email_to=None, include_nutrition=False):
 
     return final_response
 
+
+def full_pipeline_from_photo(image_path, top_k=5, email_to=None, include_nutrition=False):
+    """
+    Takes a photo, extracts ingredients, then runs the full pipeline exactly
+    like a text or voice query would.
+    """
+    recognized_ingredients = recognize_ingredients_from_photo(image_path)
+    print(f"Recognized ingredients from photo: {recognized_ingredients}")
+
+    return full_pipeline(
+        recognized_ingredients,
+        top_k=top_k,
+        email_to=email_to,
+        include_nutrition=include_nutrition,
+    )
+
+
 if __name__ == "__main__":
-    full_pipeline("chicken, garlic, rice", email_to="ishitakhatti5@gmail.com", include_nutrition=True)
+    full_pipeline_from_photo("data/test_groceries.jpg", email_to="ishitakhatti5@gmail.com", include_nutrition=True)
