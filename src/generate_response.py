@@ -9,44 +9,61 @@ client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 def generate_recipe_response(query, results, df, guardrail_message):
     """
     Takes the user's query, the retrieved recipe indices, and the guardrail message,
-    and asks the LLM to write a natural response grounded ONLY in these recipes.
+    and asks the LLM to write a full, grounded, warm recipe response.
     """
     if not results:
         return "I couldn't find any recipes matching your request in our database."
 
-    # Build a clean text block of the actual retrieved recipes
+    # Build a clean text block of the actual retrieved recipes, including real directions
     recipe_context = ""
     for idx in results:
         title = df.iloc[idx]["title"]
         ingredients = df.iloc[idx]["ingredients_text"]
-        recipe_context += f"- {title}: {ingredients}\n"
+        directions = df.iloc[idx].get("directions", "No directions available in dataset.")
+        recipe_context += f"\nRecipe: {title}\nIngredients: {ingredients}\nDirections: {directions}\n"
 
-    prompt = f"""You are a helpful cooking assistant. A user asked: "{query}"
+    prompt = f"""You are a warm, friendly cooking assistant. A user asked: "{query}"
 
 Here are the ONLY recipes you are allowed to recommend, retrieved from our database:
 {recipe_context}
 
 Guardrail note: {guardrail_message}
 
-Instructions:
-- Recommend ONE recipe from the list above that best fits the user's request.
-- Briefly explain why it fits.
-- If the guardrail note indicates a weak match, honestly tell the user their exact ingredients weren't a perfect match, and mention this clearly.
-- Do NOT invent any recipe, ingredient, or detail not listed above.
-- Keep your response to 3-4 sentences.
+Write your response exactly in this format, using this structure and nothing extra:
+
+🍽️ [Recipe Name]
+
+[One warm, conversational opening line recommending this dish. If the guardrail note indicates a weak or partial match, say so honestly right here — e.g. "Heads up, this isn't a perfect match for everything you listed, but it's the closest thing we've got."]
+
+🧂 What you'll need:
+- ingredient one
+- ingredient two
+- ingredient three
+
+👩‍🍳 How to make it:
+1. First step
+2. Second step
+3. Third step
+
+[One short, friendly closing line — mention plainly if any of the user's ingredients weren't used, in a casual way, not a formal "Note:" section.]
+
+Rules:
+- Use the ingredients and directions EXACTLY as given above — do not shorten, invent, or skip steps.
+- Do NOT use bold text, horizontal rule dividers (---), markdown headers (##), or a formal "Note:" section.
+- Do NOT invent any ingredient, step, or detail not listed above.
+- Keep the tone casual and warm, like texting a friend a recipe — not a technical report.
 """
 
     response = client.chat.completions.create(
         model="openai/gpt-oss-120b",
         messages=[{"role": "user", "content": prompt}],
-        temperature=0.3,  # lower temperature = more consistent, less "creative" drift
+        temperature=0.3,
     )
 
     return response.choices[0].message.content
 
 
 if __name__ == "__main__":
-    # Quick manual test using fake data
     import pickle
     with open("data/recipe_embeddings.pkl", "rb") as f:
         data = pickle.load(f)

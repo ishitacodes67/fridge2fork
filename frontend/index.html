@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Fridge2Fork</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,500;0,600;1,500;1,600&family=Inter:wght@400;500;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --canvas: #17301F;
+    --canvas-deep: #0F2116;
+    --paper: #F4EEDD;
+    --paper-shadow: #E4DCC2;
+    --ink: #23201A;
+    --ink-soft: #6B6152;
+    --mustard: #E3A62F;
+    --mustard-deep: #C6871A;
+    --tomato: #C1452E;
+    --sage: #6F8F63;
+    --sage-pale: #E4ECD9;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    min-height: 100vh;
+    background:
+      radial-gradient(1200px 600px at 15% -10%, #1E3D28 0%, transparent 60%),
+      linear-gradient(180deg, var(--canvas) 0%, var(--canvas-deep) 100%);
+    font-family: 'Inter', system-ui, sans-serif;
+    color: var(--paper);
+    padding: 48px 20px 80px;
+    display: flex;
+    justify-content: center;
+  }
+
+  .page { width: 100%; max-width: 620px; }
+
+  .eyebrow {
+    font-family: 'Space Mono', monospace;
+    font-size: 12px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--mustard);
+    margin-bottom: 6px;
+  }
+
+  h1 {
+    font-family: 'Fraunces', serif;
+    font-weight: 600;
+    font-size: clamp(32px, 6vw, 44px);
+    margin: 0 0 10px;
+    letter-spacing: -0.01em;
+  }
+  h1 em {
+    font-style: italic;
+    font-weight: 500;
+    color: var(--mustard);
+  }
+
+  .tagline {
+    color: #C9D6C4;
+    font-size: 15px;
+    line-height: 1.5;
+    max-width: 46ch;
+    margin-bottom: 36px;
+  }
+
+  /* ---- Input card ---- */
+  .card {
+    background: var(--paper);
+    color: var(--ink);
+    border-radius: 14px;
+    padding: 22px 22px 26px;
+    box-shadow: 0 24px 50px -20px rgba(0,0,0,0.55);
+    transform: rotate(-0.4deg);
+  }
+
+  .tabs {
+    display: flex;
+    gap: 4px;
+    background: var(--paper-shadow);
+    padding: 4px;
+    border-radius: 10px;
+    margin-bottom: 18px;
+  }
+  .tab {
+    flex: 1;
+    text-align: center;
+    padding: 9px 6px;
+    font-family: 'Space Mono', monospace;
+    font-size: 12px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    border-radius: 7px;
+    cursor: pointer;
+    color: var(--ink-soft);
+    background: transparent;
+    border: none;
+    transition: background 0.15s ease, color 0.15s ease;
+  }
+  .tab.active { background: var(--ink); color: var(--paper); }
+  .tab:focus-visible { outline: 2px solid var(--mustard-deep); outline-offset: 2px; }
+
+  .panel { display: none; }
+  .panel.active { display: block; }
+
+  textarea {
+    width: 100%;
+    min-height: 96px;
+    resize: vertical;
+    border: 1.5px solid var(--paper-shadow);
+    background: #fff;
+    border-radius: 10px;
+    padding: 12px 14px;
+    font-family: 'Inter', sans-serif;
+    font-size: 15px;
+    color: var(--ink);
+  }
+  textarea:focus-visible { outline: 2px solid var(--mustard-deep); outline-offset: 1px; }
+
+  .helper {
+    font-size: 12.5px;
+    color: var(--ink-soft);
+    margin-top: 8px;
+  }
+
+  .drop {
+    border: 1.5px dashed var(--paper-shadow);
+    border-radius: 10px;
+    padding: 22px 16px;
+    text-align: center;
+    cursor: pointer;
+    background: #fff;
+  }
+  .drop:hover { border-color: var(--mustard-deep); }
+  .drop input { display: none; }
+  .drop-label { font-size: 14px; color: var(--ink-soft); }
+  .thumb { max-width: 100%; max-height: 140px; border-radius: 8px; margin-top: 10px; }
+
+  .mic-row { display: flex; align-items: center; gap: 14px; }
+  .mic-btn {
+    width: 56px; height: 56px; border-radius: 50%;
+    background: var(--tomato); border: none; color: white;
+    font-size: 20px; cursor: pointer; flex-shrink: 0;
+    transition: transform 0.15s ease;
+  }
+  .mic-btn:hover { transform: scale(1.05); }
+  .mic-btn.recording { animation: pulse 1.1s infinite; background: #8f2f1e; }
+  @keyframes pulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(193,69,46,0.5); }
+    50% { box-shadow: 0 0 0 10px rgba(193,69,46,0); }
+  }
+  .mic-status { font-size: 13.5px; color: var(--ink-soft); }
+
+  .options {
+    display: flex; flex-wrap: wrap; gap: 8px;
+    margin: 18px 0 16px;
+  }
+  .chip {
+    font-family: 'Space Mono', monospace;
+    font-size: 12px;
+    padding: 7px 12px;
+    border-radius: 999px;
+    border: 1.5px solid var(--paper-shadow);
+    background: #fff;
+    cursor: pointer;
+    color: var(--ink-soft);
+    user-select: none;
+  }
+  .chip.on { background: var(--sage-pale); border-color: var(--sage); color: #33452C; }
+  .email-input {
+    display: none;
+    margin-top: 8px;
+    width: 100%;
+    padding: 9px 12px;
+    border-radius: 8px;
+    border: 1.5px solid var(--paper-shadow);
+    font-size: 14px;
+    font-family: 'Inter', sans-serif;
+  }
+  .email-input.show { display: block; }
+
+  .submit {
+    width: 100%;
+    padding: 14px;
+    border: none;
+    border-radius: 10px;
+    background: var(--mustard);
+    color: var(--ink);
+    font-family: 'Space Mono', monospace;
+    font-size: 13.5px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    font-weight: 700;
+    cursor: pointer;
+    transition: transform 0.12s ease, background 0.15s ease;
+  }
+  .submit:hover { background: var(--mustard-deep); transform: translateY(-1px); }
+  .submit:disabled { opacity: 0.6; cursor: default; transform: none; }
+  .submit:focus-visible { outline: 2px solid var(--paper); outline-offset: 2px; }
+
+  /* ---- Printing indicator ---- */
+  .printing { display: none; align-items: center; gap: 10px; margin-top: 16px; }
+  .printing.active { display: flex; }
+  .printing-track { flex: 1; height: 3px; background: var(--paper-shadow); border-radius: 2px; overflow: hidden; }
+  .printing-bar { height: 100%; width: 30%; background: var(--tomato); border-radius: 2px; animation: slide 1.2s ease-in-out infinite; }
+  @media (prefers-reduced-motion: reduce) { .printing-bar { animation: none; width: 100%; } }
+  @keyframes slide { 0% { transform: translateX(-100%);} 100% { transform: translateX(330%);} }
+  .printing-text { font-family: 'Space Mono', monospace; font-size: 12px; color: var(--ink-soft); }
+
+  /* ---- Receipt result ---- */
+  .receipt {
+    display: none;
+    margin-top: 28px;
+    background: var(--paper);
+    color: var(--ink);
+    border-radius: 10px 10px 4px 4px;
+    padding: 26px 24px 22px;
+    position: relative;
+    box-shadow: 0 20px 44px -18px rgba(0,0,0,0.5);
+    transform: rotate(0.5deg);
+  }
+  .receipt.show { display: block; }
+  .receipt::after {
+    content: "";
+    position: absolute;
+    left: 0; right: 0; bottom: -1px;
+    height: 14px;
+    background:
+      linear-gradient(-45deg, var(--paper) 6px, transparent 0),
+      linear-gradient(45deg, var(--paper) 6px, transparent 0);
+    background-size: 14px 14px;
+    background-repeat: repeat-x;
+  }
+
+  .stamp {
+    position: absolute;
+    top: 18px; right: 20px;
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    font-weight: 700;
+    padding: 6px 10px;
+    border: 2px solid var(--sage);
+    color: var(--sage);
+    border-radius: 6px;
+    transform: rotate(-6deg);
+  }
+  .stamp.warn { border-color: var(--tomato); color: var(--tomato); }
+
+  .receipt-eyebrow {
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    color: var(--ink-soft);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+  .receipt-body {
+    font-size: 15px;
+    line-height: 1.6;
+    padding-right: 90px;
+  }
+  .receipt-dash {
+    border: none;
+    border-top: 1.5px dashed var(--paper-shadow);
+    margin: 16px 0;
+  }
+  .receipt-transcript {
+    font-family: 'Space Mono', monospace;
+    font-size: 12.5px;
+    color: var(--ink-soft);
+  }
+
+  footer {
+    margin-top: 44px;
+    font-family: 'Space Mono', monospace;
+    font-size: 11.5px;
+    color: #8CA184;
+    text-align: center;
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="eyebrow">fridge2fork &middot; honest recipe finder</div>
+  <h1>What's in the fridge,<br><em>tonight?</em></h1>
+  <p class="tagline">Type it, say it, or show it. It'll find a match from real recipes — and tell you straight when it's only a rough one.</p>
+
+  <div class="card">
+    <div class="tabs" role="tablist">
+      <button class="tab active" data-tab="type" role="tab">Type</button>
+      <button class="tab" data-tab="speak" role="tab">Speak</button>
+      <button class="tab" data-tab="snap" role="tab">Snap</button>
+    </div>
+
+    <div class="panel active" data-panel="type">
+      <textarea id="queryText" placeholder="eggs, spinach, leftover rice, chilli flakes..."></textarea>
+      <div class="helper">Constraints work too — “under 20 mins”, “no peanuts”, “₹300 budget”.</div>
+    </div>
+
+    <div class="panel" data-panel="speak">
+      <div class="mic-row">
+        <button class="mic-btn" id="micBtn">●</button>
+        <span class="mic-status" id="micStatus">Tap to record your ingredients</span>
+      </div>
+      <div class="helper">Or upload a voice note:</div>
+      <div class="drop" id="audioDrop" style="margin-top:8px;">
+        <input type="file" id="audioFile" accept="audio/*" />
+        <div class="drop-label">Click to choose an audio file</div>
+      </div>
+    </div>
+
+    <div class="panel" data-panel="snap">
+      <div class="drop" id="photoDrop">
+        <input type="file" id="photoFile" accept="image/*" />
+        <div class="drop-label">Click to upload a photo of your groceries</div>
+        <img class="thumb" id="photoThumb" style="display:none;" />
+      </div>
+    </div>
+
+    <div class="options">
+      <button class="chip" id="chipNutrition">🥗 nutrition tip</button>
+      <button class="chip" id="chipEmail">✉ email me a copy</button>
+    </div>
+    <input class="email-input" id="emailInput" type="email" placeholder="you@example.com" />
+
+    <button class="submit" id="submitBtn" style="margin-top:16px;">Ring it up →</button>
+
+    <div class="printing" id="printing">
+      <span class="printing-text">printing your receipt</span>
+      <div class="printing-track"><div class="printing-bar"></div></div>
+    </div>
+  </div>
+
+  <div class="receipt" id="receipt">
+    <div class="stamp" id="stamp">strong match</div>
+    <div class="receipt-eyebrow" id="receiptEyebrow">recommendation</div>
+    <div class="receipt-transcript" id="receiptTranscript" style="display:none; margin-bottom:10px;"></div>
+    <div class="receipt-body" id="receiptBody"></div>
+  </div>
+
+  <footer>built ingredient by ingredient, no shortcuts on the honesty</footer>
+</div>
+
+<script>
+  const API_BASE = "http://127.0.0.1:8000";
+
+  // --- Tabs ---
+  const tabs = document.querySelectorAll(".tab");
+  const panels = document.querySelectorAll(".panel");
+  tabs.forEach(tab => {
+    tab.addEventListener("click", () => {
+      tabs.forEach(t => t.classList.remove("active"));
+      panels.forEach(p => p.classList.remove("active"));
+      tab.classList.add("active");
+      document.querySelector(`.panel[data-panel="${tab.dataset.tab}"]`).classList.add("active");
+    });
+  });
+
+  // --- Option chips ---
+  let includeNutrition = false;
+  let emailOn = false;
+  const chipNutrition = document.getElementById("chipNutrition");
+  const chipEmail = document.getElementById("chipEmail");
+  const emailInput = document.getElementById("emailInput");
+
+  chipNutrition.addEventListener("click", () => {
+    includeNutrition = !includeNutrition;
+    chipNutrition.classList.toggle("on", includeNutrition);
+  });
+  chipEmail.addEventListener("click", () => {
+    emailOn = !emailOn;
+    chipEmail.classList.toggle("on", emailOn);
+    emailInput.classList.toggle("show", emailOn);
+  });
+
+  // --- Photo preview ---
+  const photoFile = document.getElementById("photoFile");
+  const photoDrop = document.getElementById("photoDrop");
+  const photoThumb = document.getElementById("photoThumb");
+  photoDrop.addEventListener("click", () => photoFile.click());
+  photoFile.addEventListener("change", () => {
+    if (photoFile.files[0]) {
+      photoThumb.src = URL.createObjectURL(photoFile.files[0]);
+      photoThumb.style.display = "block";
+    }
+  });
+
+  const audioDrop = document.getElementById("audioDrop");
+  const audioFile = document.getElementById("audioFile");
+  audioDrop.addEventListener("click", () => audioFile.click());
+
+  // --- Mic recording ---
+  const micBtn = document.getElementById("micBtn");
+  const micStatus = document.getElementById("micStatus");
+  let mediaRecorder, audioChunks = [], recordedBlob = null, isRecording = false;
+
+  micBtn.addEventListener("click", async () => {
+    if (!isRecording) {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        mediaRecorder = new MediaRecorder(stream);
+        audioChunks = [];
+        mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
+        mediaRecorder.onstop = () => {
+          recordedBlob = new Blob(audioChunks, { type: "audio/webm" });
+          micStatus.textContent = "Got it — ready to send.";
+        };
+        mediaRecorder.start();
+        isRecording = true;
+        micBtn.classList.add("recording");
+        micStatus.textContent = "Recording... tap to stop";
+      } catch (err) {
+        micStatus.textContent = "Mic access denied — try uploading a file instead.";
+      }
+    } else {
+      mediaRecorder.stop();
+      isRecording = false;
+      micBtn.classList.remove("recording");
+    }
+  });
+
+  // --- Submit ---
+  const submitBtn = document.getElementById("submitBtn");
+  const printing = document.getElementById("printing");
+  const receipt = document.getElementById("receipt");
+  const receiptBody = document.getElementById("receiptBody");
+  const receiptTranscript = document.getElementById("receiptTranscript");
+  const receiptEyebrow = document.getElementById("receiptEyebrow");
+  const stamp = document.getElementById("stamp");
+
+  function activeTab() {
+    return document.querySelector(".tab.active").dataset.tab;
+  }
+
+  function showResult(data, eyebrowText) {
+    receiptEyebrow.textContent = eyebrowText;
+    receiptBody.textContent = data.response || "No response received.";
+    if (data.transcribed_query) {
+      receiptTranscript.style.display = "block";
+      receiptTranscript.textContent = `heard: “${data.transcribed_query}”`;
+    } else {
+      receiptTranscript.style.display = "none";
+    }
+    const warned = data.warned !== false; // default to warn-styling if unknown
+    stamp.textContent = warned ? "partial match" : "strong match";
+    stamp.classList.toggle("warn", warned);
+    receipt.classList.add("show");
+    receipt.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  }
+
+  submitBtn.addEventListener("click", async () => {
+    const tab = activeTab();
+    const email_to = emailOn ? emailInput.value.trim() || null : null;
+
+    submitBtn.disabled = true;
+    printing.classList.add("active");
+    receipt.classList.remove("show");
+
+    try {
+      let res, data;
+
+      if (tab === "type") {
+        const query = document.getElementById("queryText").value.trim();
+        if (!query) { alert("Type in a few ingredients first."); return; }
+        res = await fetch(`${API_BASE}/recommend`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ query, include_nutrition: includeNutrition, email_to }),
+        });
+        data = await res.json();
+        showResult(data, "recommendation");
+
+      } else if (tab === "speak") {
+        const form = new FormData();
+        if (recordedBlob) form.append("file", recordedBlob, "recording.webm");
+        else if (audioFile.files[0]) form.append("file", audioFile.files[0]);
+        else { alert("Record or upload some audio first."); return; }
+        form.append("include_nutrition", includeNutrition);
+        if (email_to) form.append("email_to", email_to);
+
+        res = await fetch(`${API_BASE}/recommend-voice`, { method: "POST", body: form });
+        data = await res.json();
+        showResult(data, "recommendation");
+
+      } else if (tab === "snap") {
+        if (!photoFile.files[0]) { alert("Upload a photo first."); return; }
+        const form = new FormData();
+        form.append("file", photoFile.files[0]);
+        form.append("include_nutrition", includeNutrition);
+        if (email_to) form.append("email_to", email_to);
+
+        res = await fetch(`${API_BASE}/recommend-photo`, { method: "POST", body: form });
+        data = await res.json();
+        showResult(data, "recommendation");
+      }
+    } catch (err) {
+      receiptEyebrow.textContent = "something went wrong";
+      receiptBody.textContent = "Couldn't reach the kitchen (API). Is the server running?";
+      stamp.textContent = "error";
+      stamp.classList.add("warn");
+      receipt.classList.add("show");
+    } finally {
+      submitBtn.disabled = false;
+      printing.classList.remove("active");
+    }
+  });
+</script>
+</body>
+</html>
