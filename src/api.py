@@ -6,7 +6,7 @@ import shutil
 from fastapi import FastAPI, UploadFile, File, Form
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from query_router import full_pipeline, full_pipeline_from_photo
+from query_router_lite import full_pipeline_lite as full_pipeline
 
 app = FastAPI(title="Fridge2Fork API")
 
