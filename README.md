@@ -99,6 +99,12 @@ The architecture is provider-agnostic: swapping the generation model requires ch
 - Scale from the 2000-row dev sample to the full 2.2M-row dataset with a production vector index (e.g. FAISS)
 - Add cost/latency tracking and query routing (skip generation for simple constraint-only queries)
 
+## Live Demo
+
+**Live API**: https://fridge2fork-1lgf.onrender.com (free tier — first request after inactivity may take 30-60s to wake up)
+
+The deployed version runs a lightweight BM25-only retrieval mode over a 500-recipe subset, to fit Render's free-tier 512MB memory limit. Voice input (Whisper) and photo-based ingredient recognition (Groq vision) are fully implemented and demonstrated in the local version and demo video, but aren't part of the live deployment due to the memory footprint of those ML models. The full hybrid retrieval pipeline (BM25 + dense embeddings) over the complete 2000-recipe dataset, plus all three input modalities, runs locally — see "Running It" below.
+
 ## Running It
 
 ```bash
