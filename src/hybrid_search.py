@@ -5,7 +5,7 @@ from sklearn.metrics.pairwise import cosine_similarity
 from rank_bm25 import BM25Okapi
 
 # Load saved embeddings + dataframe
-with open("data/recipe_embeddings.pkl", "rb") as f:
+with open("data/recipe_embeddings_deploy.pkl", "rb") as f:
     data = pickle.load(f)
 
 embeddings = data["embeddings"]
