@@ -52,7 +52,6 @@ def route_and_search(query, top_k=5):
             if any(excluded in recipe_ingredients for excluded in constraints["exclude"]):
                 continue
 
-               # --- Apply budget filter if a specific amount was given ---
         if "max_budget_inr" in constraints:
             recipe_ingredients_list = df.iloc[idx]["NER"]
             cost = estimate_recipe_cost(recipe_ingredients_list)
@@ -62,6 +61,7 @@ def route_and_search(query, top_k=5):
         results.append(idx)
         if len(results) >= top_k:
             break
+
     print(f"\nTop {len(results)} results after filtering:\n")
 
     if not results:
@@ -81,7 +81,7 @@ def route_and_search(query, top_k=5):
     return results
 
 
-def full_pipeline(query, top_k=5, email_to=None, include_nutrition=False):
+def full_pipeline(query, top_k=5, email_to=None, include_nutrition=False, return_meta=False):
     results = route_and_search(query, top_k=top_k)
 
     constraints = parse_constraints(query)
@@ -93,6 +93,7 @@ def full_pipeline(query, top_k=5, email_to=None, include_nutrition=False):
             f"No recipes found that avoid: {', '.join(excluded_items)}."
             if excluded_items else "No matching recipes found."
         )
+        should_warn = True
     else:
         should_warn, coverage_scores, guardrail_message = evaluate_results(
             query_ingredients, results, df
@@ -119,10 +120,12 @@ def full_pipeline(query, top_k=5, email_to=None, include_nutrition=False):
     if email_to:
         send_recipe_email(email_to, final_response, query)
 
+    if return_meta:
+        return {"response": final_response, "warned": should_warn}
     return final_response
 
 
-def full_pipeline_from_photo(image_path, top_k=5, email_to=None, include_nutrition=False):
+def full_pipeline_from_photo(image_path, top_k=5, email_to=None, include_nutrition=False, return_meta=False):
     """
     Takes a photo, extracts ingredients, then runs the full pipeline exactly
     like a text or voice query would.
@@ -135,6 +138,7 @@ def full_pipeline_from_photo(image_path, top_k=5, email_to=None, include_nutriti
         top_k=top_k,
         email_to=email_to,
         include_nutrition=include_nutrition,
+        return_meta=return_meta,
     )
 
 
