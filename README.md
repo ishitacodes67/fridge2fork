@@ -38,6 +38,17 @@ Output (web UI receipt card + optional email, with nutrition suggestions)
 - **Email delivery**: sends the full recipe via Gmail SMTP
 - **Web frontend**: a receipt/pantry-themed single-page UI (FastAPI backend) supporting all three input types, with a stamped confidence badge reflecting the guardrail state as structured data, not guessed from prose
 
+
+## User Accounts & Favorites (local version)
+
+The local, full-featured version includes user authentication (signup/login via JWT) and a favorites system backed by SQLite — users can save generated recipes and retrieve them later. This is available when running the full pipeline locally (see "Running It"). The live deployed version (Render, `deploy` branch) intentionally omits auth, favorites, voice, and photo input to fit the platform's free-tier 512MB memory limit — it demonstrates the core text-query retrieval and generation pipeline only.
+
+## Branching Note
+
+- `main`: full-featured codebase (all input modalities, auth, favorites) — intended for local use and code review
+- `deploy`: lightweight branch (text-only, BM25 retrieval, no auth) — what Render actually runs in production
+
+
 ## The Eval Story
 
 Built a 25-query adversarial evaluation set spanning six categories: easy/baseline, constraint-heavy, rare-ingredient, ambiguous phrasing, logically conflicting requests, and allergy-critical exact-match cases.
