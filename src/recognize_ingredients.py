@@ -17,7 +17,7 @@ def recognize_ingredients_from_photo(image_path):
     base64_image = encode_image(image_path)
 
     response = client.chat.completions.create(
-        model="qwen/qwen3.6-27b",
+        model="qwen/qwen3.8-27b",
         messages=[
             {
                 "role": "user",

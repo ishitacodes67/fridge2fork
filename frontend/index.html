@@ -68,7 +68,6 @@
     margin-bottom: 36px;
   }
 
-  /* ---- Input card ---- */
   .card {
     background: var(--paper);
     color: var(--ink);
@@ -202,7 +201,6 @@
   .submit:disabled { opacity: 0.6; cursor: default; transform: none; }
   .submit:focus-visible { outline: 2px solid var(--paper); outline-offset: 2px; }
 
-  /* ---- Printing indicator ---- */
   .printing { display: none; align-items: center; gap: 10px; margin-top: 16px; }
   .printing.active { display: flex; }
   .printing-track { flex: 1; height: 3px; background: var(--paper-shadow); border-radius: 2px; overflow: hidden; }
@@ -211,7 +209,6 @@
   @keyframes slide { 0% { transform: translateX(-100%);} 100% { transform: translateX(330%);} }
   .printing-text { font-family: 'Space Mono', monospace; font-size: 12px; color: var(--ink-soft); }
 
-  /* ---- Receipt result ---- */
   .receipt {
     display: none;
     margin-top: 28px;
@@ -264,6 +261,7 @@
     font-size: 15px;
     line-height: 1.6;
     padding-right: 90px;
+    white-space: pre-wrap;
   }
   .receipt-dash {
     border: none;
@@ -283,10 +281,107 @@
     color: #8CA184;
     text-align: center;
   }
+
+  /* ---- Auth bar ---- */
+  #authBar {
+    text-align: right;
+    margin-bottom: 16px;
+    font-family: 'Space Mono', monospace;
+    font-size: 13px;
+  }
+  #authBtn, #favBtn {
+    margin-left: 10px;
+    background: none;
+    border: 1px solid var(--paper);
+    color: var(--paper);
+    padding: 6px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 12px;
+  }
+  #favBtn { display: none; border-color: var(--mustard); color: var(--mustard); }
+
+  /* ---- Modals ---- */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.6);
+    z-index: 100;
+    align-items: center;
+    justify-content: center;
+  }
+  .modal-overlay.show { display: flex; }
+  .modal-box {
+    background: var(--paper);
+    color: var(--ink);
+    padding: 28px;
+    border-radius: 12px;
+    width: 90%;
+    max-width: 380px;
+  }
+  .modal-box.wide { max-width: 480px; max-height: 70vh; overflow-y: auto; }
+  .modal-box input {
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 10px;
+    border-radius: 8px;
+    border: 1.5px solid var(--paper-shadow);
+    font-family: 'Inter', sans-serif;
+    font-size: 14px;
+  }
+  .authTab {
+    flex: 1;
+    padding: 8px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-family: 'Space Mono', monospace;
+    font-size: 12px;
+    background: transparent;
+  }
+  .authTab.active { background: var(--paper-shadow); }
+  .modal-close {
+    width: 100%;
+    margin-top: 10px;
+    background: none;
+    border: none;
+    color: var(--ink-soft);
+    cursor: pointer;
+    font-size: 12.5px;
+  }
+  .fav-item {
+    border-bottom: 1px dashed var(--paper-shadow);
+    padding: 10px 0;
+  }
+  .fav-item p {
+    white-space: pre-wrap;
+    font-size: 14px;
+    margin: 6px 0 0;
+  }
+  .save-fav-btn {
+    display: none;
+    margin-top: 14px;
+    background: none;
+    border: 1.5px solid var(--sage);
+    color: var(--sage);
+    padding: 8px 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-family: 'Space Mono', monospace;
+    font-size: 12px;
+  }
 </style>
 </head>
 <body>
 <div class="page">
+
+  <div id="authBar">
+    <span id="authStatus">Not logged in</span>
+    <button id="authBtn">Log In / Sign Up</button>
+    <button id="favBtn">My Favorites</button>
+  </div>
 
   <div class="eyebrow">fridge2fork &middot; honest recipe finder</div>
   <h1>What's in the fridge,<br><em>tonight?</em></h1>
@@ -343,13 +438,38 @@
     <div class="receipt-eyebrow" id="receiptEyebrow">recommendation</div>
     <div class="receipt-transcript" id="receiptTranscript" style="display:none; margin-bottom:10px;"></div>
     <div class="receipt-body" id="receiptBody"></div>
+    <button class="save-fav-btn" id="saveFavBtn">☆ Save to Favorites</button>
   </div>
 
   <footer>built ingredient by ingredient, no shortcuts on the honesty</footer>
 </div>
 
+<!-- Auth Modal -->
+<div class="modal-overlay" id="authModal">
+  <div class="modal-box">
+    <div style="display:flex; gap:10px; margin-bottom:16px;">
+      <button class="authTab active" data-authtab="login">Log In</button>
+      <button class="authTab" data-authtab="signup">Sign Up</button>
+    </div>
+    <input id="authEmail" type="email" placeholder="you@example.com" />
+    <input id="authPassword" type="password" placeholder="password" />
+    <button id="authSubmit" class="submit" style="margin-top:4px;">Log In</button>
+    <div id="authError" style="color:var(--tomato); font-size:12.5px; margin-top:10px;"></div>
+    <button id="authClose" class="modal-close">Cancel</button>
+  </div>
+</div>
+
+<!-- Favorites Modal -->
+<div class="modal-overlay" id="favModal">
+  <div class="modal-box wide">
+    <h3 style="font-family:'Fraunces',serif; margin-top:0;">Your Saved Recipes</h3>
+    <div id="favList"></div>
+    <button id="favClose" class="modal-close">Close</button>
+  </div>
+</div>
+
 <script>
-  const API_BASE ="http://127.0.0.1:8000";
+  const API_BASE = "http://127.0.0.1:8000";
 
   // --- Tabs ---
   const tabs = document.querySelectorAll(".tab");
@@ -435,23 +555,33 @@
   const receiptEyebrow = document.getElementById("receiptEyebrow");
   const stamp = document.getElementById("stamp");
 
+  let lastQuery = "";
+  let lastResponse = "";
+
   function activeTab() {
     return document.querySelector(".tab.active").dataset.tab;
   }
 
   function showResult(data, eyebrowText) {
+    lastQuery = document.getElementById("queryText").value.trim() || "voice/photo query";
+    lastResponse = data.response || "";
+
     receiptEyebrow.textContent = eyebrowText;
     receiptBody.textContent = data.response || "No response received.";
     if (data.transcribed_query) {
       receiptTranscript.style.display = "block";
-      receiptTranscript.textContent = `heard: “${data.transcribed_query}”`;
+      receiptTranscript.textContent = `heard: "${data.transcribed_query}"`;
     } else {
       receiptTranscript.style.display = "none";
     }
-    const warned = data.warned !== false; // default to warn-styling if unknown
+    const warned = data.warned !== false;
     stamp.textContent = warned ? "partial match" : "strong match";
     stamp.classList.toggle("warn", warned);
     receipt.classList.add("show");
+
+    document.getElementById("saveFavBtn").style.display = authToken ? "inline-block" : "none";
+    document.getElementById("saveFavBtn").textContent = "☆ Save to Favorites";
+
     receipt.scrollIntoView({ behavior: "smooth", block: "nearest" });
   }
 
@@ -510,6 +640,130 @@
       submitBtn.disabled = false;
       printing.classList.remove("active");
     }
+  });
+
+  // ================= AUTH + FAVORITES =================
+
+  let authToken = localStorage.getItem("f2f_token") || null;
+  let authMode = "login";
+
+  function updateAuthUI() {
+    if (authToken) {
+      document.getElementById("authStatus").textContent = "Logged in";
+      document.getElementById("authBtn").textContent = "Log Out";
+      document.getElementById("favBtn").style.display = "inline-block";
+    } else {
+      document.getElementById("authStatus").textContent = "Not logged in";
+      document.getElementById("authBtn").textContent = "Log In / Sign Up";
+      document.getElementById("favBtn").style.display = "none";
+    }
+    document.getElementById("saveFavBtn").style.display =
+      (authToken && receipt.classList.contains("show")) ? "inline-block" : "none";
+  }
+  updateAuthUI();
+
+  document.getElementById("authBtn").addEventListener("click", () => {
+    if (authToken) {
+      authToken = null;
+      localStorage.removeItem("f2f_token");
+      updateAuthUI();
+    } else {
+      document.getElementById("authModal").classList.add("show");
+    }
+  });
+
+  document.getElementById("authClose").addEventListener("click", () => {
+    document.getElementById("authModal").classList.remove("show");
+    document.getElementById("authError").textContent = "";
+  });
+
+  document.querySelectorAll(".authTab").forEach(tab => {
+    tab.addEventListener("click", () => {
+      authMode = tab.dataset.authtab;
+      document.querySelectorAll(".authTab").forEach(t => t.classList.remove("active"));
+      tab.classList.add("active");
+      document.getElementById("authSubmit").textContent = authMode === "login" ? "Log In" : "Sign Up";
+      document.getElementById("authError").textContent = "";
+    });
+  });
+
+  document.getElementById("authSubmit").addEventListener("click", async () => {
+    const email = document.getElementById("authEmail").value.trim();
+    const password = document.getElementById("authPassword").value.trim();
+    const errorBox = document.getElementById("authError");
+    errorBox.style.color = "var(--tomato)";
+    errorBox.textContent = "";
+
+    if (!email || !password) { errorBox.textContent = "Enter both email and password."; return; }
+
+    try {
+      if (authMode === "signup") {
+        const res = await fetch(`${API_BASE}/signup`, {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, password })
+        });
+        if (!res.ok) { const err = await res.json(); errorBox.textContent = err.detail || "Signup failed."; return; }
+        errorBox.style.color = "var(--sage)";
+        errorBox.textContent = "Account created! Switch to Log In.";
+        return;
+      }
+
+      const res = await fetch(`${API_BASE}/login`, {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password })
+      });
+      if (!res.ok) { const err = await res.json(); errorBox.textContent = err.detail || "Login failed."; return; }
+      const data = await res.json();
+      authToken = data.access_token;
+      localStorage.setItem("f2f_token", authToken);
+      document.getElementById("authModal").classList.remove("show");
+      updateAuthUI();
+    } catch (e) {
+      errorBox.textContent = "Couldn't reach the server.";
+    }
+  });
+
+  document.getElementById("saveFavBtn").addEventListener("click", async () => {
+    if (!authToken) return;
+    try {
+      const res = await fetch(`${API_BASE}/favorites`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${authToken}` },
+        body: JSON.stringify({ query: lastQuery, recipe_text: lastResponse })
+      });
+      if (res.ok) {
+        document.getElementById("saveFavBtn").textContent = "★ Saved!";
+        setTimeout(() => { document.getElementById("saveFavBtn").textContent = "☆ Save to Favorites"; }, 2000);
+      }
+    } catch (e) {}
+  });
+
+  document.getElementById("favBtn").addEventListener("click", async () => {
+    const favList = document.getElementById("favList");
+    favList.innerHTML = "Loading...";
+    document.getElementById("favModal").classList.add("show");
+    try {
+      const res = await fetch(`${API_BASE}/favorites`, {
+        headers: { "Authorization": `Bearer ${authToken}` }
+      });
+      const favorites = await res.json();
+      if (favorites.length === 0) {
+        favList.innerHTML = "<p>No saved recipes yet.</p>";
+      } else {
+        favList.innerHTML = favorites.map(f => `
+          <div class="fav-item">
+            <strong>${f.query}</strong>
+            <p>${f.recipe_text}</p>
+          </div>
+        `).join("");
+      }
+    } catch (e) {
+      favList.innerHTML = "Couldn't load favorites.";
+    }
+  });
+
+  document.getElementById("favClose").addEventListener("click", () => {
+    document.getElementById("favModal").classList.remove("show");
   });
 </script>
 </body>
