@@ -218,3 +218,10 @@ __marimo__/
 .streamlit/secrets.toml
 data/RecipeNLG_dataset.csv
 data/RecipeNLG_dataset.csv
+fridge2fork.db
+temp_*.png
+temp_*.jpg
+temp_*.jpeg
+temp_*.webm
+temp_*.mp3
+temp_*.m4a
